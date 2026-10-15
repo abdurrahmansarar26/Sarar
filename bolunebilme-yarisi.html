@@ -1,0 +1,1267 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Bölünebilme Kuralları Araba Yarışı</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;700;800&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: manipulation;
+    }
+
+    body {
+      background: #060913;
+      color: #f1f5f9;
+      font-family: 'Outfit', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    #game-container {
+      position: relative;
+      width: 100%;
+      max-width: 480px;
+      height: 100vh;
+      max-height: 840px;
+      background: #090e1a;
+      box-shadow: 0 0 50px rgba(6, 182, 212, 0.25);
+      border-left: 2px solid #1e293b;
+      border-right: 2px solid #1e293b;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Top HUD */
+    #hud-top {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 20;
+      padding: 10px 14px;
+      background: linear-gradient(180deg, rgba(6,9,19,0.95) 0%, rgba(6,9,19,0.85) 80%, rgba(6,9,19,0) 100%);
+      pointer-events: auto;
+    }
+
+    .hud-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 6px;
+    }
+
+    .hud-title {
+      font-family: 'Chakra Petch', sans-serif;
+      font-weight: 800;
+      font-size: 13px;
+      letter-spacing: 1px;
+      color: #38bdf8;
+      text-transform: uppercase;
+    }
+
+    .hud-stats {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-family: 'Chakra Petch', sans-serif;
+    }
+
+    .stat-badge {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .score-val {
+      color: #facc15;
+      text-shadow: 0 0 10px rgba(250, 204, 21, 0.5);
+    }
+
+    .lives-val {
+      font-size: 16px;
+      letter-spacing: 2px;
+    }
+
+    /* Question Banner */
+    #question-card {
+      background: rgba(15, 23, 42, 0.88);
+      border: 1.5px solid #06b6d4;
+      border-radius: 10px;
+      padding: 8px 12px;
+      text-align: center;
+      box-shadow: 0 0 20px rgba(6, 182, 212, 0.3);
+      backdrop-filter: blur(8px);
+      transition: all 0.3s ease;
+    }
+
+    #question-card.turbo {
+      border-color: #f59e0b;
+      box-shadow: 0 0 30px rgba(245, 158, 11, 0.5);
+    }
+
+    #question-text {
+      font-family: 'Chakra Petch', sans-serif;
+      font-size: 15px;
+      font-weight: 800;
+      color: #ffffff;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      line-height: 1.25;
+      text-shadow: 0 0 10px rgba(6, 182, 212, 0.6);
+    }
+
+    #question-tip {
+      font-size: 11px;
+      color: #38bdf8;
+      margin-top: 3px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+    }
+
+    #question-tip strong {
+      color: #facc15;
+    }
+
+    /* Canvas */
+    #game-canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+      background: #070b14;
+    }
+
+    /* Floating Toast / Feedback */
+    #feedback-toast {
+      position: absolute;
+      top: 135px;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 6px 14px;
+      border-radius: 8px;
+      font-family: 'Chakra Petch', sans-serif;
+      font-weight: 800;
+      font-size: 14px;
+      text-align: center;
+      z-index: 25;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s, transform 0.25s;
+    }
+
+    #feedback-toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(5px);
+    }
+
+    #feedback-toast.success {
+      background: rgba(16, 185, 129, 0.9);
+      color: #022c22;
+      border: 1px solid #34d399;
+      box-shadow: 0 0 25px rgba(16, 185, 129, 0.6);
+    }
+
+    #feedback-toast.danger {
+      background: rgba(239, 68, 68, 0.95);
+      color: #ffffff;
+      border: 1px solid #f87171;
+      box-shadow: 0 0 25px rgba(239, 68, 68, 0.6);
+    }
+
+    /* Bottom Touch Controls */
+    #touch-controls {
+      position: absolute;
+      bottom: 20px;
+      left: 14px;
+      right: 14px;
+      display: flex;
+      justify-content: space-between;
+      gap: 14px;
+      z-index: 20;
+    }
+
+    .touch-btn {
+      flex: 1;
+      height: 64px;
+      background: rgba(15, 23, 42, 0.75);
+      border: 2px solid rgba(6, 182, 212, 0.4);
+      border-radius: 14px;
+      color: #38bdf8;
+      font-family: 'Chakra Petch', sans-serif;
+      font-size: 20px;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      backdrop-filter: blur(6px);
+      box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+      cursor: pointer;
+      transition: transform 0.08s, background 0.08s, border-color 0.08s;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .touch-btn:active {
+      transform: scale(0.95);
+      background: rgba(6, 182, 212, 0.3);
+      border-color: #38bdf8;
+      box-shadow: 0 0 20px rgba(6, 182, 212, 0.6);
+    }
+
+    /* Overlays (Start, Game Over, Rules) */
+    .overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(6, 9, 19, 0.92);
+      backdrop-filter: blur(10px);
+      z-index: 40;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      text-align: center;
+    }
+
+    .overlay.hidden {
+      display: none !important;
+    }
+
+    .title-banner {
+      font-family: 'Chakra Petch', sans-serif;
+      font-size: 26px;
+      font-weight: 900;
+      line-height: 1.15;
+      text-transform: uppercase;
+      background: linear-gradient(135deg, #38bdf8 0%, #facc15 50%, #f97316 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 6px;
+      letter-spacing: 1px;
+    }
+
+    .subtitle {
+      font-size: 13px;
+      color: #94a3b8;
+      margin-bottom: 22px;
+    }
+
+    .btn-main {
+      width: 100%;
+      max-width: 280px;
+      padding: 15px 24px;
+      background: linear-gradient(135deg, #06b6d4 0%, #2563eb 100%);
+      color: #041226;
+      font-family: 'Chakra Petch', sans-serif;
+      font-size: 17px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      box-shadow: 0 0 30px rgba(6, 182, 212, 0.5);
+      transition: all 0.15s ease;
+      margin-bottom: 12px;
+    }
+
+    .btn-main:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 0 40px rgba(6, 182, 212, 0.8);
+      background: linear-gradient(135deg, #22d3ee 0%, #3b82f6 100%);
+    }
+
+    .btn-secondary {
+      background: rgba(30, 41, 59, 0.8);
+      border: 1px solid rgba(148, 163, 184, 0.3);
+      color: #cbd5e1;
+      padding: 10px 18px;
+      font-size: 13px;
+      font-weight: 600;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .btn-secondary:hover {
+      background: rgba(51, 65, 85, 0.9);
+      color: #fff;
+    }
+
+    .quick-rules-box {
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid #1e293b;
+      border-radius: 12px;
+      padding: 12px 14px;
+      font-size: 12px;
+      color: #94a3b8;
+      text-align: left;
+      margin-bottom: 20px;
+      width: 100%;
+      max-width: 320px;
+    }
+
+    .quick-rules-box ul {
+      margin-top: 6px;
+      padding-left: 18px;
+    }
+
+    .quick-rules-box li {
+      margin-bottom: 4px;
+    }
+
+    .quick-rules-box strong {
+      color: #38bdf8;
+    }
+
+    /* Modal */
+    #rules-modal {
+      position: absolute;
+      inset: 12px;
+      background: #0b1120;
+      border: 2px solid #06b6d4;
+      border-radius: 16px;
+      z-index: 50;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 0 40px rgba(6, 182, 212, 0.4);
+      overflow: hidden;
+    }
+
+    #rules-modal-header {
+      padding: 12px 16px;
+      background: #080d1a;
+      border-bottom: 1px solid #1e293b;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    #rules-modal-body {
+      padding: 14px;
+      overflow-y: auto;
+      text-align: left;
+      flex: 1;
+    }
+
+    .rule-card {
+      margin-bottom: 12px;
+      padding: 10px 12px;
+      background: rgba(15, 23, 42, 0.6);
+      border-radius: 10px;
+      border-left: 4px solid #06b6d4;
+    }
+
+    .rule-card-title {
+      font-family: 'Chakra Petch', sans-serif;
+      font-size: 14px;
+      font-weight: 700;
+      color: #38bdf8;
+      margin-bottom: 4px;
+    }
+
+    .rule-card-desc {
+      font-size: 12px;
+      color: #cbd5e1;
+      line-height: 1.4;
+    }
+
+    .rule-card-tip {
+      font-size: 11px;
+      color: #facc15;
+      margin-top: 4px;
+    }
+
+    .hud-chip {
+      background: rgba(15, 23, 42, 0.7);
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-size: 11px;
+      color: #94a3b8;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+  </style>
+</head>
+<body>
+
+  <div id="game-container">
+    
+    <!-- Top HUD -->
+    <div id="hud-top">
+      <div class="hud-row">
+        <div class="hud-stats">
+          <div class="stat-badge">
+            <span style="color:#94a3b8; font-size:11px;">SKOR</span>
+            <span id="score-display" class="score-val">0</span>
+          </div>
+          <div class="hud-chip" id="combo-display">1x KOMBO</div>
+        </div>
+
+        <div class="hud-stats">
+          <div class="stat-badge">
+            <span id="lives-display" class="lives-val">❤️❤️❤️</span>
+          </div>
+          <button id="btn-sound" class="btn-secondary" style="padding:4px 8px; font-size:12px;">🔊</button>
+        </div>
+      </div>
+
+      <!-- Question Card -->
+      <div id="question-card">
+        <div id="question-text">HEDEF: 2 ile kalansız bölünen sayıya çarp!</div>
+        <div id="question-tip">
+          <span>💡</span>
+          <span id="tip-text">Son basamağı çift (0, 2, 4, 6, 8) olmalı!</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Floating Toast -->
+    <div id="feedback-toast">HARİKA! +100</div>
+
+    <!-- Main Game Canvas -->
+    <canvas id="game-canvas"></canvas>
+
+    <!-- Bottom Touch Controls -->
+    <div id="touch-controls">
+      <button id="btn-left" class="touch-btn" aria-label="Sol Kulvar">
+        <span>◀</span> SOL
+      </button>
+      <button id="btn-right" class="touch-btn" aria-label="Sağ Kulvar">
+        SAĞ <span>▶</span>
+      </button>
+    </div>
+
+    <!-- Start Overlay -->
+    <div id="overlay-start" class="overlay">
+      <div class="title-banner">BÖLÜNEBİLME<br>ARABA YARIŞI</div>
+      <div class="subtitle">6. Sınıf Matematik Arcade Hız Macerası</div>
+
+      <div class="quick-rules-box">
+        <strong>🎮 NASIL OYNANIR?</strong>
+        <ul>
+          <li>Yolda yukarıdan 3 farklı sayı akacak.</li>
+          <li>Yukarıdaki kurala uyan <strong>DOĞRU</strong> sayıya çarp!</li>
+          <li>Doğru sayı <strong>+100 Puan</strong> ve <strong>TURBO</strong> verir.</li>
+          <li>Yanlış sayıya çarparsan <strong>1 CAN</strong> kaybedersin!</li>
+        </ul>
+      </div>
+
+      <button id="btn-start" class="btn-main">GAZA BAS! (BAŞLA)</button>
+      <button id="btn-open-rules" class="btn-secondary">📖 Kurallar Rehberini İncele</button>
+    </div>
+
+    <!-- Game Over Overlay -->
+    <div id="overlay-gameover" class="overlay hidden">
+      <div class="title-banner" style="background: linear-gradient(135deg, #ef4444, #f97316); -webkit-background-clip: text;">
+        YARIŞ BİTTİ!
+      </div>
+      <div class="subtitle" id="gameover-reason">Yakıtın bitti ve aracın hasar aldı!</div>
+
+      <div class="quick-rules-box" style="text-align: center;">
+        <div style="font-size:12px; color:#94a3b8;">TOPLAM PUAN</div>
+        <div id="final-score" style="font-family:'Chakra Petch'; font-size:36px; font-weight:800; color:#facc15; text-shadow:0 0 15px rgba(250,204,21,0.5);">
+          0
+        </div>
+        <div style="display:flex; justify-content:space-around; margin-top:10px; font-family:'Chakra Petch';">
+          <div>
+            <div style="color:#94a3b8; font-size:11px;">DOĞRU KAPILAR</div>
+            <div id="final-correct" style="color:#34d399; font-weight:700; font-size:18px;">0</div>
+          </div>
+          <div>
+            <div style="color:#94a3b8; font-size:11px;">EN İYİ REKOR</div>
+            <div id="final-best" style="color:#38bdf8; font-weight:700; font-size:18px;">0</div>
+          </div>
+        </div>
+      </div>
+
+      <button id="btn-restart" class="btn-main">TEKRAR YARIŞ</button>
+      <button id="btn-gameover-rules" class="btn-secondary">📖 Kuralları Tekrar İncele</button>
+    </div>
+
+    <!-- Rules Modal -->
+    <div id="rules-modal" class="hidden">
+      <div id="rules-modal-header">
+        <div style="font-family:'Chakra Petch'; font-weight:700; color:#38bdf8; font-size:14px;">
+          6. SINIF BÖLÜNEBİLME KURALLARI
+        </div>
+        <button id="btn-close-rules" class="btn-secondary" style="padding:2px 8px;">✕</button>
+      </div>
+      <div id="rules-modal-body">
+        <div class="rule-card">
+          <div class="rule-card-title">2 ile Bölünebilme</div>
+          <div class="rule-card-desc">Birler basamağı çift olan sayılar (0, 2, 4, 6, 8) 2 ile tam bölünür.</div>
+          <div class="rule-card-tip">💡 Örn: 124, 580 (Sonu çift)</div>
+        </div>
+        <div class="rule-card">
+          <div class="rule-card-title">3 ile Bölünebilme</div>
+          <div class="rule-card-desc">Rakamları toplamı 3 veya 3'ün katı olan sayılar 3'e tam bölünür.</div>
+          <div class="rule-card-tip">💡 Örn: 135 -> 1+3+5 = 9 (3'ün katı)</div>
+        </div>
+        <div class="rule-card">
+          <div class="rule-card-title">4 ile Bölünebilme</div>
+          <div class="rule-card-desc">Son iki basamağı 00 veya 4'ün katı olan sayılar 4'e tam bölünür.</div>
+          <div class="rule-card-tip">💡 Örn: 316 -> Son iki basamak 16 (4'ün katı)</div>
+        </div>
+        <div class="rule-card">
+          <div class="rule-card-title">5 ile Bölünebilme</div>
+          <div class="rule-card-desc">Birler basamağı 0 veya 5 olan tüm sayılar 5 ile tam bölünür.</div>
+          <div class="rule-card-tip">💡 Örn: 740, 895 (Son basamak 0 veya 5)</div>
+        </div>
+        <div class="rule-card">
+          <div class="rule-card-title">6 ile Bölünebilme</div>
+          <div class="rule-card-desc">Bir sayı hem 2'ye (çift) hem 3'e (rakamlar toplamı 3'ün katı) bölünüyorsa 6'ya da bölünür.</div>
+          <div class="rule-card-tip">💡 Örn: 324 -> Çift ve 3+2+4=9 (3'ün katı)</div>
+        </div>
+        <div class="rule-card">
+          <div class="rule-card-title">9 ile Bölünebilme</div>
+          <div class="rule-card-desc">Rakamları toplamı 9 veya 9'un katı olan sayılar 9'a tam bölünür.</div>
+          <div class="rule-card-tip">💡 Örn: 486 -> 4+8+6 = 18 (9'un katı)</div>
+        </div>
+        <div class="rule-card">
+          <div class="rule-card-title">10 ile Bölünebilme</div>
+          <div class="rule-card-desc">Birler basamağı mutlaka 0 olan sayılar 10 ile tam bölünür.</div>
+          <div class="rule-card-tip">💡 Örn: 520, 1400 (Sonu 0 ile biter)</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    /* =====================================================================
+       BÖLÜNEBİLME KURALLARI ARABA YARIŞI - VANILLA JAVASCRIPT MOTORU
+       ===================================================================== */
+
+    // 1. SOUND SYSTEM (Web Audio API Synthesizer)
+    class SoundEngine {
+      constructor() {
+        this.ctx = null;
+        this.muted = false;
+      }
+      init() {
+        if (!this.ctx) {
+          const AudioCtx = window.AudioContext || window.webkitAudioContext;
+          if (AudioCtx) this.ctx = new AudioCtx();
+        }
+        if (this.ctx && this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      }
+      playCorrect() {
+        if (this.muted) return;
+        this.init();
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        [523.25, 659.25, 783.99, 1046.5].forEach((freq, idx) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(freq, now + idx * 0.06);
+          gain.gain.setValueAtTime(0, now + idx * 0.06);
+          gain.gain.linearRampToValueAtTime(0.18, now + idx * 0.06 + 0.02);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.06 + 0.22);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(now + idx * 0.06);
+          osc.stop(now + idx * 0.06 + 0.25);
+        });
+      }
+      playWrong() {
+        if (this.muted) return;
+        this.init();
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(140, now);
+        osc.frequency.linearRampToValueAtTime(65, now + 0.35);
+        gain.gain.setValueAtTime(0.25, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.38);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.4);
+      }
+      playTurbo() {
+        if (this.muted) return;
+        this.init();
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(280, now);
+        osc.frequency.exponentialRampToValueAtTime(1100, now + 0.35);
+        gain.gain.setValueAtTime(0.05, now);
+        gain.gain.linearRampToValueAtTime(0.15, now + 0.1);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.45);
+      }
+      playSwitch() {
+        if (this.muted) return;
+        this.init();
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(260, now);
+        osc.frequency.exponentialRampToValueAtTime(380, now + 0.08);
+        gain.gain.setValueAtTime(0.1, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.09);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.1);
+      }
+    }
+    const sounds = new SoundEngine();
+
+    // 2. RULES & QUESTION GENERATOR
+    const RULES = {
+      2: {
+        divisor: 2,
+        title: "2 ile Bölünebilme",
+        question: "2 ile KALANSIZ BÖLÜNEN sayıya çarp!",
+        tip: "Son rakamı çift (0, 2, 4, 6, 8) olmalı!",
+        check: (n) => n % 2 === 0
+      },
+      3: {
+        divisor: 3,
+        title: "3 ile Bölünebilme",
+        question: "3 ile TAM BÖLÜNEBİLEN sayıyı yakala!",
+        tip: "Rakamları toplamı 3'ün katı olmalı!",
+        check: (n) => n % 3 === 0
+      },
+      4: {
+        divisor: 4,
+        title: "4 ile Bölünebilme",
+        question: "4 ile KALANSIZ BÖLÜNEN sayıya sür!",
+        tip: "Son iki basamağı 4'ün katı (veya 00) olmalı!",
+        check: (n) => n % 4 === 0
+      },
+      5: {
+        divisor: 5,
+        title: "5 ile Bölünebilme",
+        question: "5 ile TAM BÖLÜNEN sayıya çarp!",
+        tip: "Son basamağı 0 veya 5 olmalı!",
+        check: (n) => n % 5 === 0
+      },
+      6: {
+        divisor: 6,
+        title: "6 ile Bölünebilme",
+        question: "6'ya TAM BÖLÜNEN sayıya yönel!",
+        tip: "Hem ÇİFT, hem rakamları toplamı 3'ün katı olmalı!",
+        check: (n) => n % 6 === 0
+      },
+      9: {
+        divisor: 9,
+        title: "9 ile Bölünebilme",
+        question: "9 ile KALANSIZ BÖLÜNEN sayıya çarp!",
+        tip: "Rakamları toplamı 9 veya 9'un katı olmalı!",
+        check: (n) => n % 9 === 0
+      },
+      10: {
+        divisor: 10,
+        title: "10 ile Bölünebilme",
+        question: "10 ile TAM BÖLÜNEN sayıyı bul!",
+        tip: "Son basamağı mutlaka 0 olmalı!",
+        check: (n) => n % 10 === 0
+      }
+    };
+    const RULE_KEYS = [2, 3, 4, 5, 6, 9, 10];
+
+    function createWaveQuestion(prevDivisor) {
+      let pool = RULE_KEYS;
+      if (prevDivisor && pool.length > 1) {
+        pool = pool.filter(d => d !== prevDivisor);
+      }
+      const divisor = pool[Math.floor(Math.random() * pool.length)];
+      const rule = RULES[divisor];
+
+      let correctVal = 0;
+      for (let i = 0; i < 80; i++) {
+        const mult = Math.floor(Math.random() * 50) + 4;
+        const candidate = mult * divisor;
+        if (rule.check(candidate) && candidate >= 20 && candidate <= 480) {
+          correctVal = candidate;
+          break;
+        }
+      }
+      if (!correctVal) correctVal = divisor * 8;
+
+      const wrongs = [];
+      for (let i = 0; i < 150; i++) {
+        const offset = (Math.random() > 0.5 ? 1 : -1) * (Math.floor(Math.random() * 7) + 1);
+        let cand = correctVal + offset;
+        if (cand < 15) cand = Math.floor(Math.random() * 200) + 20;
+        if (!rule.check(cand) && cand !== correctVal && !wrongs.includes(cand)) {
+          wrongs.push(cand);
+          if (wrongs.length === 2) break;
+        }
+      }
+      while (wrongs.length < 2) {
+        const fallback = correctVal + wrongs.length + 1;
+        if (!rule.check(fallback) && !wrongs.includes(fallback)) wrongs.push(fallback);
+      }
+
+      const correctLane = Math.floor(Math.random() * 3);
+      const otherLanes = [0, 1, 2].filter(l => l !== correctLane);
+
+      const items = [
+        { lane: correctLane, val: correctVal, isCorrect: true },
+        { lane: otherLanes[0], val: wrongs[0], isCorrect: false },
+        { lane: otherLanes[1], val: wrongs[1], isCorrect: false }
+      ].sort((a,b) => a.lane - b.lane);
+
+      return {
+        divisor,
+        rule,
+        items,
+        correctLane
+      };
+    }
+
+    // 3. GAME STATE & SETUP
+    const canvas = document.getElementById('game-canvas');
+    const ctx = canvas.getContext('2d');
+    const container = document.getElementById('game-container');
+
+    const scoreDisplay = document.getElementById('score-display');
+    const comboDisplay = document.getElementById('combo-display');
+    const livesDisplay = document.getElementById('lives-display');
+    const questionText = document.getElementById('question-text');
+    const tipText = document.getElementById('tip-text');
+    const questionCard = document.getElementById('question-card');
+    const toast = document.getElementById('feedback-toast');
+
+    const overlayStart = document.getElementById('overlay-start');
+    const overlayGameOver = document.getElementById('overlay-gameover');
+    const rulesModal = document.getElementById('rules-modal');
+
+    let gameActive = false;
+    let score = 0;
+    let lives = 3;
+    let combo = 1;
+    let correctCount = 0;
+    let highScore = parseInt(localStorage.getItem('bolunebilme_highscore') || '0', 10);
+
+    let playerLane = 1;
+    let playerX = 0;
+    let targetX = 0;
+    let playerY = 0;
+    let playerTilt = 0;
+    let invincibleTime = 0;
+    let turboTime = 0;
+    let screenShake = 0;
+
+    // Road & Speed (Calmed down for comfortable mental calculation)
+    let baseSpeed = 2.0;
+    let currentSpeed = 2.0;
+    let roadOffset = 0;
+
+    let currentWave = null;
+    let waveY = -120;
+    let waveHandled = false;
+
+    let particles = [];
+
+    function resizeCanvas() {
+      const rect = container.getBoundingClientRect();
+      canvas.width = rect.width;
+      canvas.height = rect.height;
+      playerY = canvas.height - 150;
+      targetX = getLaneCenterX(playerLane);
+      playerX = targetX;
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    function getLaneCenterX(lane) {
+      const roadWidth = canvas.width * 0.86;
+      const roadLeft = (canvas.width - roadWidth) / 2;
+      const laneWidth = roadWidth / 3;
+      return roadLeft + lane * laneWidth + laneWidth / 2;
+    }
+
+    function showToast(msg, type = 'success') {
+      toast.innerText = msg;
+      toast.className = 'show ' + type;
+      setTimeout(() => {
+        toast.className = '';
+      }, 1400);
+    }
+
+    // 4. GAME LOOP
+    let lastTime = performance.now();
+
+    function gameLoop(now) {
+      const dt = Math.min((now - lastTime) / 1000, 0.1);
+      lastTime = now;
+
+      if (gameActive) {
+        update(dt);
+      }
+      render();
+
+      requestAnimationFrame(gameLoop);
+    }
+    requestAnimationFrame(gameLoop);
+
+    function update(dt) {
+      if (turboTime > 0) {
+        turboTime -= dt;
+        currentSpeed = baseSpeed * 1.35;
+        questionCard.classList.add('turbo');
+      } else {
+        currentSpeed = baseSpeed;
+        questionCard.classList.remove('turbo');
+      }
+
+      if (invincibleTime > 0) {
+        invincibleTime -= dt;
+      }
+
+      if (screenShake > 0) {
+        screenShake -= dt * 40;
+        if (screenShake < 0) screenShake = 0;
+      }
+
+      roadOffset = (roadOffset + currentSpeed * 50 * dt) % 80;
+
+      targetX = getLaneCenterX(playerLane);
+      const diffX = targetX - playerX;
+      playerX += diffX * Math.min(dt * 15, 1);
+      playerTilt = (diffX * 0.08);
+
+      if (!currentWave) {
+        currentWave = createWaveQuestion(null);
+        waveY = -100;
+        waveHandled = false;
+        updateQuestionHUD();
+      } else {
+        waveY += currentSpeed * 48 * dt;
+
+        const carBumperY = playerY - 45;
+        if (!waveHandled && waveY >= carBumperY - 20 && waveY <= playerY + 30) {
+          checkCollision();
+        }
+
+        if (waveY > canvas.height + 60) {
+          currentWave = createWaveQuestion(currentWave.divisor);
+          waveY = -120;
+          waveHandled = false;
+          updateQuestionHUD();
+        }
+      }
+
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.x += p.vx * dt * 60;
+        p.y += p.vy * dt * 60;
+        p.life -= dt * p.decay;
+        if (p.life <= 0) {
+          particles.splice(i, 1);
+        }
+      }
+    }
+
+    function updateQuestionHUD() {
+      if (!currentWave) return;
+      questionText.innerText = currentWave.rule.question;
+      tipText.innerText = currentWave.rule.tip;
+    }
+
+    function checkCollision() {
+      waveHandled = true;
+      const hitItem = currentWave.items.find(it => it.lane === playerLane);
+
+      if (hitItem && hitItem.isCorrect) {
+        score += 100 * combo;
+        combo = Math.min(combo + 1, 5);
+        correctCount++;
+        turboTime = 3.0;
+        sounds.playCorrect();
+        sounds.playTurbo();
+        createExplosion(playerX, playerY - 30, '#10b981', 35);
+        showToast('TURBO! +100 PUAN (' + combo + 'x)', 'success');
+      } else {
+        if (invincibleTime <= 0) {
+          lives--;
+          combo = 1;
+          invincibleTime = 1.8;
+          screenShake = 18;
+          sounds.playWrong();
+          createExplosion(playerX, playerY - 30, '#ef4444', 30);
+          showToast('-1 CAN! DİKKAT!', 'danger');
+
+          if (lives <= 0) {
+            triggerGameOver('Canların tükendi!');
+          }
+        }
+      }
+      updateStatsHUD();
+    }
+
+    function updateStatsHUD() {
+      scoreDisplay.innerText = score;
+      comboDisplay.innerText = combo + 'x KOMBO';
+      let hearts = '';
+      for (let i = 0; i < 3; i++) {
+        hearts += i < lives ? '❤️' : '🖤';
+      }
+      livesDisplay.innerText = hearts;
+    }
+
+    function createExplosion(x, y, color, count = 25) {
+      for (let i = 0; i < count; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const spd = Math.random() * 7 + 2;
+        particles.push({
+          x,
+          y,
+          vx: Math.cos(angle) * spd,
+          vy: Math.sin(angle) * spd,
+          color,
+          size: Math.random() * 4 + 2,
+          life: 1.0,
+          decay: Math.random() * 1.5 + 1.2
+        });
+      }
+    }
+
+    // 5. RENDERING
+    function render() {
+      ctx.save();
+
+      if (screenShake > 0) {
+        const shakeX = (Math.random() - 0.5) * screenShake;
+        const shakeY = (Math.random() - 0.5) * screenShake;
+        ctx.translate(shakeX, shakeY);
+      }
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      const bgGrad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+      bgGrad.addColorStop(0, '#050811');
+      bgGrad.addColorStop(1, '#09101f');
+      ctx.fillStyle = bgGrad;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      const roadWidth = canvas.width * 0.86;
+      const roadLeft = (canvas.width - roadWidth) / 2;
+      const roadRight = roadLeft + roadWidth;
+      const laneWidth = roadWidth / 3;
+
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(roadLeft, 0, roadWidth, canvas.height);
+
+      const curbWidth = 10;
+      const curbSegment = 40;
+      for (let y = -curbSegment + (roadOffset % curbSegment); y < canvas.height + curbSegment; y += curbSegment) {
+        const isRed = Math.floor((y - roadOffset) / curbSegment) % 2 === 0;
+        ctx.fillStyle = isRed ? '#ef4444' : '#f8fafc';
+        ctx.fillRect(roadLeft - curbWidth, y, curbWidth, curbSegment);
+        ctx.fillRect(roadRight, y, curbWidth, curbSegment);
+      }
+
+      ctx.strokeStyle = '#06b6d4';
+      ctx.lineWidth = 3;
+      ctx.setLineDash([25, 25]);
+      ctx.lineDashOffset = -roadOffset;
+
+      ctx.beginPath();
+      ctx.moveTo(roadLeft + laneWidth, 0);
+      ctx.lineTo(roadLeft + laneWidth, canvas.height);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(roadLeft + laneWidth * 2, 0);
+      ctx.lineTo(roadLeft + laneWidth * 2, canvas.height);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      if (turboTime > 0) {
+        ctx.strokeStyle = 'rgba(56, 189, 248, 0.4)';
+        ctx.lineWidth = 2;
+        for (let i = 0; i < 8; i++) {
+          const sx = roadLeft + Math.random() * roadWidth;
+          const sy = (roadOffset * 4 + i * 110) % canvas.height;
+          ctx.beginPath();
+          ctx.moveTo(sx, sy);
+          ctx.lineTo(sx, sy + 50);
+          ctx.stroke();
+        }
+      }
+
+      if (currentWave) {
+        renderWaveGates(currentWave, waveY, laneWidth, roadLeft);
+      }
+
+      renderCar(playerX, playerY, playerTilt, invincibleTime > 0, turboTime > 0);
+      renderParticles();
+
+      ctx.restore();
+    }
+
+    function renderWaveGates(wave, y, laneWidth, roadLeft) {
+      wave.items.forEach(item => {
+        const cx = roadLeft + item.lane * laneWidth + laneWidth / 2;
+        const gateW = laneWidth * 0.88;
+        const gateH = 58;
+        const gx = cx - gateW / 2;
+        const gy = y - gateH / 2;
+
+        ctx.save();
+        // All options have identical neon styling so player must solve the rule mentally
+        ctx.shadowColor = 'rgba(6, 182, 212, 0.65)';
+        ctx.shadowBlur = 14;
+
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.94)';
+        ctx.strokeStyle = '#38bdf8';
+        ctx.lineWidth = 2.5;
+
+        roundRect(ctx, gx, gy, gateW, gateH, 12, true, true);
+
+        ctx.fillStyle = 'rgba(6, 182, 212, 0.12)';
+        roundRect(ctx, gx + 2, gy + 2, gateW - 4, gateH - 4, 10, true, false);
+
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '800 24px "Chakra Petch", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(item.val, cx, gy + gateH / 2);
+
+        // Identical beacon dot for all options
+        ctx.fillStyle = '#38bdf8';
+        ctx.beginPath();
+        ctx.arc(cx, gy + 8, 3.5, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.restore();
+      });
+    }
+
+    function renderCar(x, y, tilt, isInvincible, isTurbo) {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(tilt);
+
+      if (isInvincible && Math.floor(Date.now() / 100) % 2 === 0) {
+        ctx.globalAlpha = 0.4;
+      }
+
+      const carW = 46;
+      const carH = 84;
+
+      ctx.save();
+      ctx.shadowColor = isTurbo ? '#f59e0b' : '#06b6d4';
+      ctx.shadowBlur = isTurbo ? 35 : 20;
+      ctx.fillStyle = isTurbo ? 'rgba(245, 158, 11, 0.6)' : 'rgba(6, 182, 212, 0.4)';
+      ctx.fillRect(-carW / 2 + 5, -carH / 2 + 10, carW - 10, carH - 20);
+      ctx.restore();
+
+      const flameLen = isTurbo ? 30 + Math.random() * 15 : 12 + Math.random() * 8;
+      ctx.fillStyle = isTurbo ? '#f97316' : '#38bdf8';
+      ctx.beginPath();
+      ctx.moveTo(-14, carH / 2);
+      ctx.lineTo(-9, carH / 2);
+      ctx.lineTo(-11.5, carH / 2 + flameLen);
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.moveTo(9, carH / 2);
+      ctx.lineTo(14, carH / 2);
+      ctx.lineTo(11.5, carH / 2 + flameLen);
+      ctx.fill();
+
+      ctx.fillStyle = isTurbo ? '#ea580c' : '#0284c7';
+      roundRect(ctx, -carW / 2, -carH / 2, carW, carH, 12, true, false);
+
+      ctx.fillStyle = '#0f172a';
+      roundRect(ctx, -carW / 2 + 7, -carH / 2 + 20, carW - 14, 28, 6, true, false);
+
+      ctx.fillStyle = 'rgba(56, 189, 248, 0.7)';
+      roundRect(ctx, -carW / 2 + 10, -carH / 2 + 23, carW - 20, 10, 4, true, false);
+
+      ctx.fillStyle = isTurbo ? '#c2410c' : '#0369a1';
+      roundRect(ctx, -10, -5, 20, 24, 4, true, false);
+
+      ctx.fillStyle = '#090d16';
+      ctx.fillRect(-carW / 2 - 2, carH / 2 - 8, carW + 4, 7);
+
+      ctx.fillStyle = '#fef08a';
+      ctx.shadowColor = '#fef08a';
+      ctx.shadowBlur = 10;
+      ctx.fillRect(-carW / 2 + 4, -carH / 2 + 3, 8, 4);
+      ctx.fillRect(carW / 2 - 12, -carH / 2 + 3, 8, 4);
+
+      ctx.shadowBlur = 0;
+      ctx.fillStyle = '#1e293b';
+      ctx.fillRect(-carW / 2 - 3, -carH / 2 + 12, 4, 16);
+      ctx.fillRect(carW / 2 - 1, -carH / 2 + 12, 4, 16);
+      ctx.fillRect(-carW / 2 - 3, carH / 2 - 28, 4, 18);
+      ctx.fillRect(carW / 2 - 1, carH / 2 - 28, 4, 18);
+
+      ctx.restore();
+    }
+
+    function renderParticles() {
+      particles.forEach(p => {
+        ctx.save();
+        ctx.globalAlpha = p.life;
+        ctx.fillStyle = p.color;
+        ctx.shadowColor = p.color;
+        ctx.shadowBlur = 8;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      });
+    }
+
+    function roundRect(ctx, x, y, width, height, radius, fill, stroke) {
+      if (typeof radius === 'number') {
+        radius = {tl: radius, tr: radius, br: radius, bl: radius};
+      }
+      ctx.beginPath();
+      ctx.moveTo(x + radius.tl, y);
+      ctx.lineTo(x + width - radius.tr, y);
+      ctx.quadraticCurveTo(x + width, y, x + width, y + radius.tr);
+      ctx.lineTo(x + width, y + height - radius.br);
+      ctx.quadraticCurveTo(x + width, y + height, x + width - radius.br, y + height);
+      ctx.lineTo(x + radius.bl, y + height);
+      ctx.quadraticCurveTo(x, y + height, x, y + height - radius.bl);
+      ctx.lineTo(x, y + radius.tl);
+      ctx.quadraticCurveTo(x, y, x + radius.tl, y);
+      ctx.closePath();
+      if (fill) ctx.fill();
+      if (stroke) ctx.stroke();
+    }
+
+    // 6. CONTROLS
+    function moveLeft() {
+      if (!gameActive) return;
+      if (playerLane > 0) {
+        playerLane--;
+        sounds.playSwitch();
+      }
+    }
+
+    function moveRight() {
+      if (!gameActive) return;
+      if (playerLane < 2) {
+        playerLane++;
+        sounds.playSwitch();
+      }
+    }
+
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') {
+        moveLeft();
+      } else if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') {
+        moveRight();
+      }
+    });
+
+    document.getElementById('btn-left').addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      moveLeft();
+    });
+    document.getElementById('btn-right').addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      moveRight();
+    });
+
+    canvas.addEventListener('pointerdown', (e) => {
+      if (!gameActive) return;
+      const rect = canvas.getBoundingClientRect();
+      const clickX = e.clientX - rect.left;
+      const sector = clickX / rect.width;
+      if (sector < 0.33) {
+        playerLane = 0;
+        sounds.playSwitch();
+      } else if (sector < 0.66) {
+        playerLane = 1;
+        sounds.playSwitch();
+      } else {
+        playerLane = 2;
+        sounds.playSwitch();
+      }
+    });
+
+    // 7. GAME LIFECYCLE
+    function startGame() {
+      score = 0;
+      lives = 3;
+      combo = 1;
+      correctCount = 0;
+      playerLane = 1;
+      invincibleTime = 0;
+      turboTime = 0;
+      currentWave = null;
+      particles = [];
+
+      updateStatsHUD();
+      overlayStart.classList.add('hidden');
+      overlayGameOver.classList.add('hidden');
+      gameActive = true;
+      sounds.playTurbo();
+    }
+
+    function triggerGameOver(reason) {
+      gameActive = false;
+      if (score > highScore) {
+        highScore = score;
+        localStorage.setItem('bolunebilme_highscore', String(highScore));
+      }
+      document.getElementById('gameover-reason').innerText = reason;
+      document.getElementById('final-score').innerText = score;
+      document.getElementById('final-correct').innerText = correctCount;
+      document.getElementById('final-best').innerText = highScore;
+      overlayGameOver.classList.remove('hidden');
+    }
+
+    document.getElementById('btn-start').addEventListener('click', startGame);
+    document.getElementById('btn-restart').addEventListener('click', startGame);
+
+    document.getElementById('btn-open-rules').addEventListener('click', () => {
+      rulesModal.classList.remove('hidden');
+    });
+    document.getElementById('btn-gameover-rules').addEventListener('click', () => {
+      rulesModal.classList.remove('hidden');
+    });
+    document.getElementById('btn-close-rules').addEventListener('click', () => {
+      rulesModal.classList.add('hidden');
+    });
+
+    const soundBtn = document.getElementById('btn-sound');
+    soundBtn.addEventListener('click', () => {
+      sounds.muted = !sounds.muted;
+      soundBtn.innerText = sounds.muted ? '🔇' : '🔊';
+    });
+
+  </script>
+</body>
+</html>
